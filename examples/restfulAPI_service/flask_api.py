@@ -14,5 +14,9 @@ def create_item():
     }
     return jsonify(item), 200
 
+@app.route('/', methods=['GET'])
+def root():
+    return jsonify({"text": "hello"}), 200
+
 if __name__ == "__main__":
     app.run(port=5000)
