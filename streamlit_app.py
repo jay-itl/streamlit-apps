@@ -14,15 +14,28 @@ class StreamlitRouter:
         return (path,)
 
     def redirect(self, path):
-        st.experimental_set_query_params(**{path.split('?')[1].split('=')[0]: path.split('?')[1].split('=')[1]})
+        st.experimental_set_query_params(path=path)
 
     def serve(self):
         query_params = st.experimental_get_query_params()
-        path = st.experimental_get_query_params().get('path', ['/'])[0]
+        path = query_params.get('path', ['/'])[0]
+        func, params = self.match_route(path)
+        if func:
+            func(self, **params)
+
+    def match_route(self, path):
         for route_path, func in self.routes.items():
-            if route_path == path:
-                func(self, **query_params)
-                break
+            if route_path == path.split('?')[0]:
+                query_string = path.split('?')[1] if '?' in path else ''
+                params = {k: v for k, v in [p.split('=') for p in query_string.split('&') if '=' in p]}
+                return func, params
+        return None, {}
+
+    def map(self, path):
+        def decorator(func):
+            self.register(func, path)
+            return func
+        return decorator
 
 def index(router):
     st.text("Front page index")
@@ -52,7 +65,7 @@ router.register(index, '/')
 router.register(cancel_task, "/tasks/<int:x>", methods=['DELETE'])
 router.register(create_task, "/tasks/<int:x>", methods=['POST'])
 
-@router.map("/tasks/<int:x>")
+@router.map("/tasks/view_task")
 def view_task(router, x):
     st.text(f"Front page view task x={x}")
     if st.button("Back to index 2"):
